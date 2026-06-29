@@ -15,10 +15,9 @@ if not password:
     st.info("請輸入密碼以繼續")
     st.stop()
 
-if password != st.secrets["general"]["password"]:
+if password != st.secrets.general.password:
     st.error("❌ 密碼錯誤！")
     st.stop()
-
 # ====================== 主程式 ======================
 
 st.success("✅ 驗證成功！")
