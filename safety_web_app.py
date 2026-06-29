@@ -6,14 +6,27 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from io import BytesIO
 
-st.set_page_config(page_title="廣華醫院2期地盤安全報告", layout="wide")
+# ====================== 密碼保護 ======================
 st.title("🛠️ 廣華醫院2期地盤安全巡查報告系統")
-st.subheader("中國水電 俊和")
 
-site_name = "廣華醫院2期地盤"
+password = st.text_input("🔐 輸入安全密碼", type="password")
+
+if not password:
+    st.info("請輸入密碼以繼續")
+    st.stop()
+
+if password != st.secrets["general"]["password"]:
+    st.error("❌ 密碼錯誤！")
+    st.stop()
+
+# ====================== 主程式 ======================
+
+st.success("✅ 驗證成功！")
+
 company = "中國水電 俊和"
+site_name = "廣華醫院2期地盤"
 
-categories = ["地盤整潔", "機械移動", "個人防護", "吊運", "高空工作", "離地工作", "電力安全", "分判管理", "機械護罩", "通道"]
+categories = ["地盤整潔", "機械", "個人防護", "吊運", "高空工作", "離地工作", "電力安全", "分判管理", "通道"]
 
 if 'issues' not in st.session_state:
     st.session_state.issues = []
@@ -23,34 +36,37 @@ tab1, tab2 = st.tabs(["新增問題", "生成報告"])
 with tab1:
     st.subheader("新增安全問題")
     
+    officer_name = st.text_input("安全主任姓名", "李安全")
+    
     col1, col2 = st.columns([1, 1])
     
     with col1:
         date = st.date_input("巡查日期", datetime.today())
-        location = st.text_input("發生地點", "")
-        personnel = st.text_input("涉及分判/人員", "")
+        location = st.text_input("發生地點")
+        subcontractor = st.text_input("分判")
         category = st.selectbox("問題分類", categories)
         severity = st.selectbox("嚴重度", ["高", "中", "低"])
     
     with col2:
-        problem = st.text_area("問題事項描述", "")
-        suggestion = st.text_area("建議處理方法", "")
+        problem = st.text_area("問題事項描述")
+        suggestion = st.text_area("建議處理方法")
     
-    uploaded_files = st.file_uploader("上傳問題相片（可多張）", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("上傳問題相片", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
     if st.button("✅ 新增此問題", type="primary"):
         if problem.strip() and location.strip():
             st.session_state.issues.append({
                 "date": date,
                 "location": location,
-                "personnel": personnel,
+                "subcontractor": subcontractor,
                 "category": category,
                 "severity": severity,
                 "problem": problem,
                 "suggestion": suggestion,
-                "photos": uploaded_files
+                "photos": uploaded_files,
+                "officer": officer_name
             })
-            st.success("✅ 已成功新增！表單已清空。")
+            st.success("✅ 已成功新增！")
             st.rerun()
         else:
             st.error("請填寫發生地點和問題事項")
@@ -58,9 +74,8 @@ with tab1:
     if st.session_state.issues:
         st.subheader(f"已登記問題（共 {len(st.session_state.issues)} 筆）")
         for i, issue in enumerate(st.session_state.issues):
-            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']} | {issue['location']}"):
-                st.write(f"**日期**：{issue['date']}")
-                st.write(f"**涉及分判/人員**：{issue['personnel']}")
+            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']}"):
+                st.write(f"**分判**：{issue['subcontractor']}")
                 st.write(f"**問題**：{issue['problem']}")
                 st.write(f"**建議**：{issue['suggestion']}")
                 if issue.get('photos'):
@@ -75,20 +90,20 @@ with tab2:
             doc = Document()
             doc.add_heading(f'{company}\n{site_name}\n安全巡查問題分析報告', 0)
             doc.add_paragraph(f'報告日期：{datetime.now().strftime("%Y年%m月%d日")}')
+            doc.add_paragraph(f'安全主任：{st.session_state.issues[0]["officer"]}')
             
             cat_count = pd.Series([i['category'] for i in st.session_state.issues]).value_counts()
             fig, ax = plt.subplots(figsize=(10, 6))
             cat_count.plot(kind='bar', ax=ax, color='skyblue')
-            ax.set_title('各類型問題統計')
-            ax.set_ylabel('問題數量')
+            ax.set_title('問題分類統計')
+            ax.set_ylabel('數量')
             plt.xticks(rotation=45)
             plt.savefig("chart.png")
             doc.add_picture("chart.png", width=Inches(6))
             
             for i, issue in enumerate(st.session_state.issues):
                 doc.add_heading(f'問題 {i+1} - {issue["location"]}', level=1)
-                doc.add_paragraph(f'日期：{issue["date"]}   分類：{issue["category"]}   嚴重度：{issue["severity"]}')
-                doc.add_paragraph(f'涉及分判/人員：{issue["personnel"]}')
+                doc.add_paragraph(f'分判：{issue["subcontractor"]}   分類：{issue["category"]}   嚴重度：{issue["severity"]}')
                 doc.add_paragraph(f'問題事項：{issue["problem"]}')
                 doc.add_paragraph(f'建議處理方法：{issue["suggestion"]}')
                 
