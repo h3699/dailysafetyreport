@@ -95,14 +95,22 @@ with tab3:
 
 with tab2:
     if st.button("🚀 生成 Word 報告", type="primary"):
-        if st.session_state.issues:
-            # 生成報告的程式碼 (之前版本)
-            # ... 
-            # 在生成報告後加入以下保存歷史的程式碼
+        if not st.session_state.issues:
+            st.error("請先新增問題")
+        else:
+            doc = Document()
+            # ... (報告生成程式碼保持不變，直到 doc.save(filename) 這一行)
+            
+            filename = f"廣華醫院2期安全報告_{datetime.now().strftime('%Y%m%d_%H%M')}.docx"
+            doc.save(filename)
+            
+            # 保存到歷史記錄（修正後）
             st.session_state.history.append({
                 "date": str(datetime.now().date()),
                 "time": datetime.now().strftime("%H:%M"),
                 "issue_count": len(st.session_state.issues),
                 "report_name": filename
             })
-            st.success("報告已保存到歷史記錄！")
+            
+            with open(filename, "rb") as f:
+                st.download_button("📥 下載報告", f, file_name=filename)
