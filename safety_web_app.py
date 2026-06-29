@@ -39,21 +39,27 @@ tab1, tab2, tab3 = st.tabs(["新增問題", "生成報告", "歷史記錄"])
 
 with tab1:
     st.subheader("新增安全問題")
+    
+    # 地盤分區地圖
     st.write("**上傳地盤分區地圖**")
     map_image = st.file_uploader("上傳地圖 (jpg/png)", type=["jpg", "jpeg", "png"], key="map_upload")
     if map_image:
-        st.image(map_image, width=700, caption="地盤分區地圖")
+        st.image(map_image, width=700, caption="✅ 已上傳地盤分區地圖")
+        st.info("請在下方「發生地點」欄位描述具體位置（例如 Wing A - 東面腳手架）")
     
     col1, col2 = st.columns([1, 1])
+    
     with col1:
         date = st.date_input("巡查日期", datetime.today())
-        location = st.text_input("發生地點")
+        location = st.text_input("發生地點（建議參考地圖位置）")
         subcontractor = st.text_input("分判")
         category = st.selectbox("問題分類", categories)
         severity = st.selectbox("嚴重度", ["高", "中", "低"])
+    
     with col2:
         problem = st.text_area("問題事項描述")
         suggestion = st.text_area("建議處理方法")
+    
     uploaded_files = st.file_uploader("上傳問題相片", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
     if st.button("✅ 新增此問題", type="primary"):
@@ -69,7 +75,7 @@ with tab1:
                 "photos": uploaded_files,
                 "map": map_image
             })
-            st.success("✅ 已成功新增！")
+            st.success("✅ 已成功新增問題！")
             st.rerun()
         else:
             st.error("請填寫發生地點和問題事項")
