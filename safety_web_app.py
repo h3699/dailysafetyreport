@@ -19,20 +19,15 @@ if not password:
 if password != st.secrets["general"]["password"]:
     st.error("❌ 密碼錯誤！")
     st.stop()
-    # ====================== Logo 顯示 ======================
-col1, col2, col3 = st.columns([1, 2, 1])
-with col1:
-    try:
-        st.image("logo1.png", width=150)
-    except:
-        st.write("**中國水電**")
-with col3:
-    try:
-        st.image("logo2.png", width=150)
-    except:
-        st.write("**俊和**")
+    # ====================== Logo + 公司名稱 ======================
+st.markdown("""
+<div style="text-align: center; margin-bottom: 10px;">
+    <img src="https://raw.githubusercontent.com/h3699/dailysafetyreport/main/logo.png" width="300">
+</div>
+""", unsafe_allow_html=True)
 
-st.title("廣華醫院2期地盤安全巡查報告系統")
+st.title("中國水電 俊和")
+st.subheader("廣華醫院2期地盤安全巡查報告系統")
 # ====================== 主程式 ======================
 
 st.success("✅ 驗證成功！")
