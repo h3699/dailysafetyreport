@@ -21,45 +21,48 @@ st.subheader("廣華醫院2期地盤安全巡查報告系統")
 company = "中國水電 俊和"
 site_name = "廣華醫院2期地盤"
 
-# ====================== 密碼保護 (暫時關閉測試) ======================
-# password = st.text_input("🔐 輸入安全密碼", type="password")
-# if not password or password != st.secrets["general"]["password"]:
-#     if password:
-#         st.error("❌ 密碼錯誤！")
-#     st.stop()
+# 密碼保護
+password = st.text_input("🔐 輸入安全密碼", type="password")
+if not password or password != st.secrets["general"]["password"]:
+    if password:
+        st.error("❌ 密碼錯誤！")
+    st.stop()
 
 categories = ["地盤整潔", "機械", "個人防護", "吊運", "高空工作", "離地工作", "電力安全", "分判管理", "通道"]
 
 if 'issues' not in st.session_state:
     st.session_state.issues = []
-if 'history' not in st.session_state:
-    st.session_state.history = []
+if 'map_image' not in st.session_state:
+    st.session_state.map_image = None
 
 tab1, tab2, tab3 = st.tabs(["新增問題", "生成報告", "歷史記錄"])
 
 with tab1:
     st.subheader("新增安全問題")
     
-    # 地盤分區地圖
-    st.write("**上傳地盤分區地圖**")
-    map_image = st.file_uploader("上傳地圖 (jpg/png)", type=["jpg", "jpeg", "png"], key="map_upload")
-    if map_image:
-        st.image(map_image, width=700, caption="✅ 已上傳地盤分區地圖")
-        st.info("請在下方「發生地點」欄位描述具體位置（例如 Wing A - 東面腳手架）")
+    # 地圖上傳 (永久保存)
+    st.write("**上傳地盤分區地圖** (永久保存)")
+    uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
+    if uploaded_map:
+        st.session_state.map_image = uploaded_map
+        st.image(uploaded_map, width=700, caption="✅ 已上傳並保存地盤分區地圖")
+    
+    if st.session_state.map_image:
+        st.image(st.session_state.map_image, width=700, caption="目前使用的地盤分區地圖")
+        if st.button("🗑️ 刪除地圖"):
+            st.session_state.map_image = None
+            st.rerun()
     
     col1, col2 = st.columns([1, 1])
-    
     with col1:
         date = st.date_input("巡查日期", datetime.today())
         location = st.text_input("發生地點（建議參考地圖位置）")
         subcontractor = st.text_input("分判")
         category = st.selectbox("問題分類", categories)
         severity = st.selectbox("嚴重度", ["高", "中", "低"])
-    
     with col2:
         problem = st.text_area("問題事項描述")
         suggestion = st.text_area("建議處理方法")
-    
     uploaded_files = st.file_uploader("上傳問題相片", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
     if st.button("✅ 新增此問題", type="primary"):
@@ -72,21 +75,25 @@ with tab1:
                 "severity": severity,
                 "problem": problem,
                 "suggestion": suggestion,
-                "photos": uploaded_files,
-                "map": map_image
+                "photos": uploaded_files
             })
-            st.success("✅ 已成功新增問題！")
+            st.success("✅ 已成功新增！")
             st.rerun()
         else:
             st.error("請填寫發生地點和問題事項")
 
-with tab3:
-    st.subheader("歷史報告查詢")
-    if st.session_state.history:
-        df = pd.DataFrame(st.session_state.history)
-        st.dataframe(df)
-    else:
-        st.info("還沒有歷史報告")
+    # 新增後立即顯示
+    if st.session_state.issues:
+        st.subheader("✅ 當日新增問題")
+        for i, issue in enumerate(st.session_state.issues):
+            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']}"):
+                st.write(f"**地點**：{issue['location']}")
+                st.write(f"**分判**：{issue['subcontractor']}")
+                st.write(f"**問題**：{issue['problem']}")
+                st.write(f"**建議**：{issue['suggestion']}")
+                if issue.get('photos'):
+                    for p in issue['photos']:
+                        st.image(p, width=500)
 
 with tab2:
     if st.button("🚀 生成 Word 報告", type="primary"):
@@ -122,15 +129,11 @@ with tab2:
             filename = f"廣華醫院2期安全報告_{datetime.now().strftime('%Y%m%d_%H%M')}.docx"
             doc.save(filename)
             
-            # 保存歷史
-            st.session_state.history.append({
-                "date": str(datetime.now().date()),
-                "time": datetime.now().strftime("%H:%M"),
-                "issue_count": len(st.session_state.issues),
-                "report_name": filename
-            })
-            
             with open(filename, "rb") as f:
                 st.download_button("📥 下載報告", f, file_name=filename)
+
+with tab3:
+    st.subheader("歷史記錄")
+    st.info("歷史記錄功能開發中...")
 
 st.caption("中國水電 俊和 | 廣華醫院2期地盤安全工具")
