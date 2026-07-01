@@ -90,6 +90,24 @@ with tab1:
                     for p in issue['photos']:
                         st.image(p, width=500)
 
+    # 新增後立即顯示 + 刪除功能
+    if st.session_state.issues:
+        st.subheader("當日新增問題")
+        for i, issue in enumerate(st.session_state.issues):
+            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']} | {issue['location']}"):
+                st.write(f"**分判**：{issue['subcontractor']}")
+                st.write(f"**問題**：{issue['problem']}")
+                st.write(f"**建議**：{issue['suggestion']}")
+                if issue.get('photos'):
+                    for p in issue['photos']:
+                        st.image(p, width=500)
+                
+                # 刪除按鈕
+                if st.button(f"🗑️ 刪除此問題", key=f"delete_{i}"):
+                    st.session_state.issues.pop(i)
+                    st.success("✅ 已刪除問題")
+                    st.rerun()
+
 with tab2:
     if st.button("🚀 生成 Word 報告", type="primary"):
         if not st.session_state.issues:
