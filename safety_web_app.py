@@ -42,12 +42,12 @@ with tab1:
     st.subheader("新增安全問題")
     
     # 地圖永久保存
-    st.write("**上傳地盤分區地圖** (永久保存)")
+    st.write("**上傳地盤分區地圖** (永久保存，直到手動刪除)")
     uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
     if uploaded_map:
         st.session_state.map_image = uploaded_map
-    if st.session_state.map_image:
-        st.image(st.session_state.map_image, width=700, caption="目前地盤分區地圖")
+    if st.session_state.get('map_image'):
+        st.image(st.session_state.map_image, width=700, caption="目前使用的地盤分區地圖")
         if st.button("🗑️ 刪除地圖"):
             st.session_state.map_image = None
             st.rerun()
@@ -81,19 +81,18 @@ with tab1:
         else:
             st.error("請填寫發生地點和問題事項")
     
-    # 當日新增問題顯示
+    # 當日問題內容保存顯示
     if st.session_state.issues:
-        st.subheader("當日新增問題")
+        st.subheader("當日新增問題內容")
         for i, issue in enumerate(st.session_state.issues):
-            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']}"):
-                st.write(f"**地點**：{issue['location']}")
+            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']} | {issue['location']}"):
                 st.write(f"**分判**：{issue.get('subcontractor', '未填')}")
                 st.write(f"**問題**：{issue['problem']}")
                 st.write(f"**建議**：{issue['suggestion']}")
                 if issue.get('photos'):
                     for p in issue['photos']:
                         st.image(p, width=500)
-                if st.button(f"🗑️ 刪除", key=f"del_{i}"):
+                if st.button(f"🗑️ 刪除此問題", key=f"del_{i}"):
                     st.session_state.issues.pop(i)
                     st.success("✅ 已刪除")
                     st.rerun()
