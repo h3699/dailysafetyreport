@@ -5,13 +5,14 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 from io import BytesIO
+import os
 
 st.set_page_config(page_title="廣華醫院2期地盤安全報告", layout="wide")
 
 # Logo
 st.markdown("""
 <div style="text-align: center; margin-bottom: 10px;">
-    <img src="https://raw.githubusercontent.com/h3699/dailysafetyreport/main/logo.png" width="300">
+    <img src="https://raw.githubusercontent.com/h3699/dailysafetyreport/main/logo.png" width="280">
 </div>
 """, unsafe_allow_html=True)
 
@@ -21,7 +22,6 @@ st.subheader("廣華醫院2期地盤安全巡查報告系統")
 company = "中國水電 俊和"
 site_name = "廣華醫院2期地盤"
 
-# 密碼保護
 password = st.text_input("🔐 輸入安全密碼", type="password")
 if not password or password != st.secrets["general"]["password"]:
     if password:
@@ -35,20 +35,16 @@ if 'issues' not in st.session_state:
 if 'map_image' not in st.session_state:
     st.session_state.map_image = None
 
-tab1, tab2, tab3 = st.tabs(["新增問題", "生成報告", "歷史記錄"])
+tab1, tab2 = st.tabs(["新增問題", "生成報告"])
 
 with tab1:
     st.subheader("新增安全問題")
-    
-    # 地圖上傳 (永久保存)
     st.write("**上傳地盤分區地圖** (永久保存)")
     uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
     if uploaded_map:
         st.session_state.map_image = uploaded_map
-        st.image(uploaded_map, width=700, caption="✅ 已上傳並保存地盤分區地圖")
-    
     if st.session_state.map_image:
-        st.image(st.session_state.map_image, width=700, caption="目前使用的地盤分區地圖")
+        st.image(st.session_state.map_image, width=700, caption="目前地盤分區地圖")
         if st.button("🗑️ 刪除地圖"):
             st.session_state.map_image = None
             st.rerun()
@@ -56,7 +52,7 @@ with tab1:
     col1, col2 = st.columns([1, 1])
     with col1:
         date = st.date_input("巡查日期", datetime.today())
-        location = st.text_input("發生地點（建議參考地圖位置）")
+        location = st.text_input("發生地點")
         subcontractor = st.text_input("分判")
         category = st.selectbox("問題分類", categories)
         severity = st.selectbox("嚴重度", ["高", "中", "低"])
@@ -82,11 +78,10 @@ with tab1:
         else:
             st.error("請填寫發生地點和問題事項")
 
-    # 新增後立即顯示
     if st.session_state.issues:
-        st.subheader("✅ 當日新增問題")
+        st.subheader("當日新增問題")
         for i, issue in enumerate(st.session_state.issues):
-            with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']}"):
+            with st.expander(f"問題 {i+1}"):
                 st.write(f"**地點**：{issue['location']}")
                 st.write(f"**分判**：{issue['subcontractor']}")
                 st.write(f"**問題**：{issue['problem']}")
@@ -104,44 +99,36 @@ with tab2:
             doc.add_heading(f'{company}\n{site_name}\n安全巡查問題分析報告', 0)
             doc.add_paragraph(f'報告日期：{datetime.now().strftime("%Y年%m月%d日")}')
             
-            # 問題內容 + 相片 (整頁顯示)
             for i, issue in enumerate(st.session_state.issues):
                 doc.add_heading(f'問題 {i+1} - {issue["location"]}', level=1)
                 doc.add_paragraph(f'分判：{issue["subcontractor"]}   分類：{issue["category"]}   嚴重度：{issue["severity"]}')
                 doc.add_paragraph(f'問題事項：{issue["problem"]}')
                 doc.add_paragraph(f'建議處理方法：{issue["suggestion"]}')
-                
                 if issue.get('photos'):
                     for photo in issue['photos']:
                         try:
-                            pic = doc.add_picture(BytesIO(photo.getvalue()), width=Inches(5.0))  # 自動縮小
-                            doc.add_paragraph(f'圖片 {i+1}')
+                            doc.add_picture(BytesIO(photo.getvalue()), width=Inches(4.5))
                         except:
                             pass
-                doc.add_paragraph("")  # 間隔
+                doc.add_paragraph("")
             
-            # 統計圖表放在最後 (解決亂碼)
+            # 圖表放在最後
             doc.add_page_break()
             doc.add_heading('問題統計圖表', level=1)
-            
             cat_count = pd.Series([i['category'] for i in st.session_state.issues]).value_counts()
             fig, ax = plt.subplots(figsize=(10, 6))
             cat_count.plot(kind='bar', ax=ax, color='skyblue')
-            ax.set_title('各類型問題統計', fontproperties='Arial')  # 避免亂碼
+            ax.set_title('各類型問題統計')
             ax.set_ylabel('問題數量')
-            plt.xticks(rotation=45, ha='right')
+            plt.xticks(rotation=45)
             plt.tight_layout()
-            plt.savefig("chart.png", dpi=300)
-            doc.add_picture("chart.png", width=Inches(6.5))
+            plt.savefig("chart.png", dpi=200)
+            doc.add_picture("chart.png", width=Inches(6))
             
             filename = f"廣華醫院2期安全報告_{datetime.now().strftime('%Y%m%d_%H%M')}.docx"
             doc.save(filename)
             
             with open(filename, "rb") as f:
                 st.download_button("📥 下載報告", f, file_name=filename)
-                
-with tab3:
-    st.subheader("歷史記錄")
-    st.info("歷史記錄功能開發中...")
 
 st.caption("中國水電 俊和 | 廣華醫院2期地盤安全工具")
