@@ -39,12 +39,14 @@ tab1, tab2 = st.tabs(["新增問題", "生成報告"])
 
 with tab1:
     st.subheader("新增安全問題")
+    
+    # 地盤分區地圖 (永久保存)
     st.write("**上傳地盤分區地圖** (永久保存)")
     uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
     if uploaded_map:
         st.session_state.map_image = uploaded_map
     if st.session_state.map_image:
-        st.image(st.session_state.map_image, width=700, caption="目前地盤分區地圖")
+        st.image(st.session_state.map_image, width=700, caption="目前使用的地盤分區地圖")
         if st.button("🗑️ 刪除地圖"):
             st.session_state.map_image = None
             st.rerun()
@@ -52,7 +54,7 @@ with tab1:
     col1, col2 = st.columns([1, 1])
     with col1:
         date = st.date_input("巡查日期", datetime.today())
-        location = st.text_input("發生地點")
+        location = st.text_input("發生地點（建議參考地圖位置）")
         subcontractor = st.text_input("分判")
         category = st.selectbox("問題分類", categories)
         severity = st.selectbox("嚴重度", ["高", "中", "低"])
@@ -77,37 +79,25 @@ with tab1:
             st.rerun()
         else:
             st.error("請填寫發生地點和問題事項")
-
-    if st.session_state.issues:
-        st.subheader("當日新增問題")
-        for i, issue in enumerate(st.session_state.issues):
-            with st.expander(f"問題 {i+1}"):
-                st.write(f"**地點**：{issue['location']}")
-                st.write(f"**分判**：{issue['subcontractor']}")
-                st.write(f"**問題**：{issue['problem']}")
-                st.write(f"**建議**：{issue['suggestion']}")
-                if issue.get('photos'):
-                    for p in issue['photos']:
-                        st.image(p, width=500)
-
-    # 新增後立即顯示 + 刪除功能
+    
+    # 當日新增問題 + 刪除功能
     if st.session_state.issues:
         st.subheader("當日新增問題")
         for i, issue in enumerate(st.session_state.issues):
             with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']} | {issue['location']}"):
-                st.write(f"**分判**：{issue['subcontractor']}")
-                st.write(f"**問題**：{issue['problem']}")
-                st.write(f"**建議**：{issue['suggestion']}")
+                st.write(f"**分判**：{issue.get('subcontractor', '未填')}")
+                st.write(f"**問題事項**：{issue['problem']}")
+                st.write(f"**建議處理方法**：{issue['suggestion']}")
                 if issue.get('photos'):
                     for p in issue['photos']:
                         st.image(p, width=500)
                 
                 # 刪除按鈕
-                if st.button(f"🗑️ 刪除此問題", key=f"delete_{i}"):
+                if st.button(f"🗑️ 刪除此問題", key=f"del_{i}"):
                     st.session_state.issues.pop(i)
-                    st.success("✅ 已刪除問題")
+                    st.success("✅ 已刪除此問題")
                     st.rerun()
-
+                    
 with tab2:
     if st.button("🚀 生成 Word 報告", type="primary"):
         if not st.session_state.issues:
