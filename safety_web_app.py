@@ -38,15 +38,17 @@ if 'map_image' not in st.session_state:
 tab1, tab2 = st.tabs(["新增問題", "生成報告"])
 
 with tab1:
+with tab1:
     st.subheader("新增安全問題")
     
-    # 地盤分區地圖 (永久保存)
+    # 地盤分區地圖 - 永久保存
     st.write("**上傳地盤分區地圖** (永久保存)")
     uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
-    if uploaded_map:
+    if uploaded_map is not None:
         st.session_state.map_image = uploaded_map
-    if st.session_state.map_image:
-        st.image(st.session_state.map_image, width=700, caption="目前使用的地盤分區地圖")
+    
+    if st.session_state.get('map_image'):
+        st.image(st.session_state.map_image, width=700, caption="✅ 目前使用的地盤分區地圖")
         if st.button("🗑️ 刪除地圖"):
             st.session_state.map_image = None
             st.rerun()
