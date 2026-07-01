@@ -104,34 +104,41 @@ with tab2:
             doc.add_heading(f'{company}\n{site_name}\n安全巡查問題分析報告', 0)
             doc.add_paragraph(f'報告日期：{datetime.now().strftime("%Y年%m月%d日")}')
             
-            # 統計圖表
-            cat_count = pd.Series([i['category'] for i in st.session_state.issues]).value_counts()
-            fig, ax = plt.subplots(figsize=(10, 6))
-            cat_count.plot(kind='bar', ax=ax, color='skyblue')
-            ax.set_title('問題分類統計')
-            ax.set_ylabel('數量')
-            plt.xticks(rotation=45)
-            plt.savefig("chart.png")
-            doc.add_picture("chart.png", width=Inches(6))
-            
+            # 問題內容 (文字 + 相片)
             for i, issue in enumerate(st.session_state.issues):
                 doc.add_heading(f'問題 {i+1} - {issue["location"]}', level=1)
                 doc.add_paragraph(f'分判：{issue["subcontractor"]}   分類：{issue["category"]}   嚴重度：{issue["severity"]}')
                 doc.add_paragraph(f'問題事項：{issue["problem"]}')
                 doc.add_paragraph(f'建議處理方法：{issue["suggestion"]}')
+                
                 if issue.get('photos'):
                     for photo in issue['photos']:
                         try:
                             doc.add_picture(BytesIO(photo.getvalue()), width=Inches(5.5))
+                            doc.add_paragraph(f'圖片 {i+1}')
                         except:
                             pass
+            
+            # 統計圖表放在最後
+            doc.add_page_break()
+            doc.add_heading('問題統計圖表', level=1)
+            
+            cat_count = pd.Series([i['category'] for i in st.session_state.issues]).value_counts()
+            fig, ax = plt.subplots(figsize=(10, 6))
+            cat_count.plot(kind='bar', ax=ax, color='skyblue')
+            ax.set_title('各類型問題統計')
+            ax.set_ylabel('問題數量')
+            plt.xticks(rotation=45, ha='right')
+            plt.tight_layout()
+            plt.savefig("chart.png")
+            doc.add_picture("chart.png", width=Inches(6.5))
             
             filename = f"廣華醫院2期安全報告_{datetime.now().strftime('%Y%m%d_%H%M')}.docx"
             doc.save(filename)
             
             with open(filename, "rb") as f:
                 st.download_button("📥 下載報告", f, file_name=filename)
-
+                
 with tab3:
     st.subheader("歷史記錄")
     st.info("歷史記錄功能開發中...")
