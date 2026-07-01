@@ -38,17 +38,15 @@ if 'map_image' not in st.session_state:
 tab1, tab2 = st.tabs(["新增問題", "生成報告"])
 
 with tab1:
-with tab1:
     st.subheader("新增安全問題")
     
-    # 地盤分區地圖 - 永久保存
+    # 地盤分區地圖
     st.write("**上傳地盤分區地圖** (永久保存)")
     uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
     if uploaded_map is not None:
         st.session_state.map_image = uploaded_map
-    
     if st.session_state.get('map_image'):
-        st.image(st.session_state.map_image, width=700, caption="✅ 目前使用的地盤分區地圖")
+        st.image(st.session_state.map_image, width=700, caption="目前使用的地盤分區地圖")
         if st.button("🗑️ 刪除地圖"):
             st.session_state.map_image = None
             st.rerun()
@@ -56,7 +54,7 @@ with tab1:
     col1, col2 = st.columns([1, 1])
     with col1:
         date = st.date_input("巡查日期", datetime.today())
-        location = st.text_input("發生地點（建議參考地圖位置）")
+        location = st.text_input("發生地點")
         subcontractor = st.text_input("分判")
         category = st.selectbox("問題分類", categories)
         severity = st.selectbox("嚴重度", ["高", "中", "低"])
@@ -82,22 +80,20 @@ with tab1:
         else:
             st.error("請填寫發生地點和問題事項")
     
-    # 當日新增問題 + 刪除功能
+    # 當日新增問題顯示
     if st.session_state.issues:
         st.subheader("當日新增問題")
         for i, issue in enumerate(st.session_state.issues):
             with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']} | {issue['location']}"):
                 st.write(f"**分判**：{issue.get('subcontractor', '未填')}")
-                st.write(f"**問題事項**：{issue['problem']}")
-                st.write(f"**建議處理方法**：{issue['suggestion']}")
+                st.write(f"**問題**：{issue['problem']}")
+                st.write(f"**建議**：{issue['suggestion']}")
                 if issue.get('photos'):
                     for p in issue['photos']:
                         st.image(p, width=500)
-                
-                # 刪除按鈕
                 if st.button(f"🗑️ 刪除此問題", key=f"del_{i}"):
                     st.session_state.issues.pop(i)
-                    st.success("✅ 已刪除此問題")
+                    st.success("✅ 已刪除")
                     st.rerun()
                     
 with tab2:
