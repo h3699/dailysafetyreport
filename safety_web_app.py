@@ -5,9 +5,27 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 from io import BytesIO
+import json
 import os
 
 st.set_page_config(page_title="廣華醫院2期地盤安全報告", layout="wide")
+
+# 檔案保存路徑
+DATA_FILE = "daily_issues.json"
+
+def load_issues():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_issues(issues):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(issues, f, ensure_ascii=False, indent=2)
+
+# 載入已保存問題
+if 'issues' not in st.session_state:
+    st.session_state.issues = load_issues()
 
 # Logo
 st.markdown("""
@@ -22,7 +40,7 @@ st.subheader("廣華醫院2期地盤安全巡查報告系統")
 company = "中國水電 俊和"
 site_name = "廣華醫院2期地盤"
 
-# 密碼 (可暫時註解)
+# 密碼保護 (可註解)
 password = st.text_input("🔐 輸入安全密碼", type="password")
 if not password or password != st.secrets["general"]["password"]:
     if password:
@@ -31,26 +49,10 @@ if not password or password != st.secrets["general"]["password"]:
 
 categories = ["地盤整潔", "機械", "個人防護", "吊運", "高空工作", "離地工作", "電力安全", "分判管理", "通道"]
 
-if 'issues' not in st.session_state:
-    st.session_state.issues = []
-if 'map_image' not in st.session_state:
-    st.session_state.map_image = None
-
 tab1, tab2 = st.tabs(["新增問題", "生成報告"])
 
 with tab1:
     st.subheader("新增安全問題")
-    
-    # 地圖永久保存
-    st.write("**上傳地盤分區地圖** (永久保存)")
-    uploaded_map = st.file_uploader("上傳地圖", type=["jpg", "jpeg", "png"], key="map_key")
-    if uploaded_map:
-        st.session_state.map_image = uploaded_map
-    if st.session_state.map_image:
-        st.image(st.session_state.map_image, width=700, caption="目前地盤分區地圖")
-        if st.button("🗑️ 刪除地圖"):
-            st.session_state.map_image = None
-            st.rerun()
     
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -67,34 +69,33 @@ with tab1:
     if st.button("✅ 新增此問題", type="primary"):
         if problem.strip() and location.strip():
             st.session_state.issues.append({
-                "date": date,
+                "date": str(date),
                 "location": location,
                 "subcontractor": subcontractor,
                 "category": category,
                 "severity": severity,
                 "problem": problem,
                 "suggestion": suggestion,
-                "photos": uploaded_files
+                "photos": [p.name for p in uploaded_files] if uploaded_files else []
             })
-            st.success("✅ 已成功新增！")
+            save_issues(st.session_state.issues)
+            st.success("✅ 已成功新增並保存！")
             st.rerun()
         else:
             st.error("請填寫發生地點和問題事項")
     
-    # 當日新增問題顯示
+    # 顯示已保存問題
     if st.session_state.issues:
-        st.subheader("當日新增問題")
+        st.subheader("當日已登記問題")
         for i, issue in enumerate(st.session_state.issues):
             with st.expander(f"問題 {i+1} | {issue['category']} | {issue['severity']}"):
                 st.write(f"**地點**：{issue['location']}")
                 st.write(f"**分判**：{issue.get('subcontractor', '未填')}")
                 st.write(f"**問題**：{issue['problem']}")
                 st.write(f"**建議**：{issue['suggestion']}")
-                if issue.get('photos'):
-                    for p in issue['photos']:
-                        st.image(p, width=500)
                 if st.button(f"🗑️ 刪除", key=f"del_{i}"):
                     st.session_state.issues.pop(i)
+                    save_issues(st.session_state.issues)
                     st.success("✅ 已刪除")
                     st.rerun()
 
@@ -112,25 +113,6 @@ with tab2:
                 doc.add_paragraph(f'分判：{issue.get("subcontractor", "未填")}   分類：{issue["category"]}   嚴重度：{issue["severity"]}')
                 doc.add_paragraph(f'問題事項：{issue["problem"]}')
                 doc.add_paragraph(f'建議處理方法：{issue["suggestion"]}')
-                if issue.get('photos'):
-                    for photo in issue['photos']:
-                        try:
-                            doc.add_picture(BytesIO(photo.getvalue()), width=Inches(4.8))
-                        except:
-                            pass
-                doc.add_paragraph("")
-            
-            doc.add_page_break()
-            doc.add_heading('問題統計圖表', level=1)
-            cat_count = pd.Series([i['category'] for i in st.session_state.issues]).value_counts()
-            fig, ax = plt.subplots(figsize=(10, 6))
-            cat_count.plot(kind='bar', ax=ax, color='skyblue')
-            ax.set_title('各類型問題統計')
-            ax.set_ylabel('問題數量')
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            plt.savefig("chart.png", dpi=200)
-            doc.add_picture("chart.png", width=Inches(6.5))
             
             filename = f"廣華醫院2期安全報告_{datetime.now().strftime('%Y%m%d_%H%M')}.docx"
             doc.save(filename)
