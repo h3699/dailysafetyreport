@@ -21,12 +21,12 @@ st.subheader("廣華醫院2期地盤安全巡查報告系統")
 company = "中國水電 俊和"
 site_name = "廣華醫院2期地盤"
 
-# 密碼保護
-password = st.text_input("🔐 輸入安全密碼", type="password")
-if not password or password != st.secrets["general"]["password"]:
-    if password:
-        st.error("❌ 密碼錯誤！")
-    st.stop()
+# ====================== 密碼保護 (暫時關閉測試) ======================
+# password = st.text_input("🔐 輸入安全密碼", type="password")
+# if not password or password != st.secrets["general"]["password"]:
+#     if password:
+#         st.error("❌ 密碼錯誤！")
+#     st.stop()
 
 categories = ["地盤整潔", "機械", "個人防護", "吊運", "高空工作", "離地工作", "電力安全", "分判管理", "通道"]
 
